@@ -11,6 +11,7 @@ import {
 
 const emptyForm = { name: "", email: "", department: "", salary: "" };
 const COLORS = ["#4f8ef7", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+const  PAGE_SIZE = 5;
 
 export default function App() {
   const [employees, setEmployees] = useState([]);
@@ -19,9 +20,13 @@ export default function App() {
   const [message, setMessage] = useState({ text: "", type: "" });
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("employees");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [deptFilter, setDeptFilter] = useState("All");
+  const [minSalary, setMinSalary] = useState("");
+  const [maxSalary, setMaxSalary] = useState("");
 
   useEffect(() => { fetchEmployees(); }, []);
-
+  //fetch employees
   const fetchEmployees = async () => {
     const res = await getAllEmployees();
     setEmployees(res.data);
@@ -64,25 +69,55 @@ export default function App() {
 
   const handleCancel = () => { setForm(emptyForm); setEditingId(null); };
 
-  const filtered = employees.filter(
-    (e) =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.department.toLowerCase().includes(search.toLowerCase())
-  );
+  const exportToCSV = () =>{
+        const headers = ["Name","Email","Department","Salary"];
+        const rows = employees.map((e) => [e.name, e.email, e.department, e.salary]);
+        const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
+        const blob = new Blob([csvContent], {type: "text/csv"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "employees.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+  };
+  // ALl unique departments for dropdown
+  const allDepartments = ["All",...new Set(employees.map((e) => e.department))];
+  //Filtering logic
+  const filtered = employees.filter((e) => {
+      const matchSearch =
+        e.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.department.toLowerCase().includes(search.toLowerCase());
+      const matchDept = deptFilter == "All" || e.department == deptFilter;
+      const matchMin = minSalary == "" || e.salary >= Number(minSalary);
+      const matchMax = maxSalary == "" || e.salary <= Number(maxSalary);
+
+      return matchSearch && matchDept && matchMin && matchMax;
+  });
+
+  //Pagination Logic
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const HandlePageChange = (page) =>{
+      setCurrentPage(page);
+      window.scrollTo({top : 0, behavior: "smooth"});
+  };
+
+  const handleSearchChange = (e) => {setSearch(e.target.value); setCurrentPage(1); };
+  const handleDeptChange = (e) => {setDeptFilter(e.target.value); setCurrentPage(1); };
+  const handleMinSalary = (e) => {setMinSalary(e.target.value); setCurrentPage(1); };
+  const handleMaxSalary = (e) => {setMaxSalary(e.target.value); setCurrentPage(1); };
+
+  const clearFilters = () => {
+      setSearch("");
+      setDeptFilter("All");
+      setMinSalary("");
+      setMaxSalary("");
+      setCurrentPage(1);
+  };
 
   const departments = [...new Set(employees.map((e) => e.department))].length;
-  const exportToCSV = () =>{
-      const headers = ["Name","Email","Department","Salary"];
-      const rows = employees.map((e) => [e.name, e.email, e.department, e.salary]);
-      const csvContent = [headers, ...rows].map((r) => r.join(",")).join("\n");
-      const blob = new Blob([csvContent], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "employees.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-  };
 
   //Chart Data
   const barData = employees.map((e) => ({
@@ -105,7 +140,6 @@ export default function App() {
             <div style={{ width: "38px", height: "38px", background: "#4f8ef7", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "18px" }}>E</div>
             <span style={{ color: "white", fontSize: "18px", fontWeight: "600" }}>Employee Management</span>
           </div>
-          {/* Nav Tabs */}
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={() => setActiveTab("employees")} style={{ padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "500", fontSize: "13px", background: activeTab === "employees" ? "#4f8ef7" : "transparent", color: activeTab === "employees" ? "white" : "#aaa" }}>
               Employees
@@ -175,15 +209,54 @@ export default function App() {
                 </form>
               </div>
 
+              {/* Search + Filters */}
+              <div style={{ background: "white", borderRadius: "10px", padding: "18px 20px", marginBottom: "16px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                  <span style={{ fontWeight: "600", color: "#1a1a2e", fontSize: "14px" }}>🔍 Search & Filter</span>
+                  <button onClick={clearFilters} style={{ background: "#f1f5f9", color: "#64748b", border: "none", padding: "6px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>
+                    Clear Filters
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "10px" }}>
+                  <input
+                    placeholder="Search by name or department..."
+                    value={search}
+                    onChange={handleSearchChange}
+                    style={{ padding: "9px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", color: "#1a1a2e" }}
+                  />
+                  <select
+                    value={deptFilter}
+                    onChange={handleDeptChange}
+                    style={{ padding: "9px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", color: "#1a1a2e", background: "white" }}
+                  >
+                    {allDepartments.map((d) => <option key={d}>{d}</option>)}
+                  </select>
+                  <input
+                    placeholder="Min Salary"
+                    type="number"
+                    value={minSalary}
+                    onChange={handleMinSalary}
+                    style={{ padding: "9px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", color: "#1a1a2e" }}
+                  />
+                  <input
+                    placeholder="Max Salary"
+                    type="number"
+                    value={maxSalary}
+                    onChange={handleMaxSalary}
+                    style={{ padding: "9px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", outline: "none", color: "#1a1a2e" }}
+                  />
+                </div>
+              </div>
+
               {/* Table */}
               <div style={{ background: "white", borderRadius: "10px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
-                <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f4f8", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: "600", color: "#1a1a2e", fontSize: "15px" }}>All Employees ({filtered.length})</span>
-                  <input placeholder="Search by name or department..." value={search} onChange={(e) => setSearch(e.target.value)}
-                    style={{ border: "1px solid #e2e8f0", borderRadius: "8px", padding: "7px 14px", fontSize: "13px", outline: "none", width: "240px", color: "#1a1a2e" }} />
+                <div style={{ padding: "16px 20px", borderBottom: "1px solid #f0f4f8" }}>
+                  <span style={{ fontWeight: "600", color: "#1a1a2e", fontSize: "15px" }}>
+                    All Employees ({filtered.length})
+                  </span>
                 </div>
-                {filtered.length === 0 ? (
-                  <div style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>No employees found. Add one above!</div>
+                {paginated.length === 0 ? (
+                  <div style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>No employees found!</div>
                 ) : (
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
                     <thead>
@@ -194,7 +267,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((emp, i) => (
+                      {paginated.map((emp, i) => (
                         <tr key={emp.id} style={{ borderTop: "1px solid #f0f4f8", background: i % 2 === 0 ? "white" : "#fafafa" }}>
                           <td style={{ padding: "13px 16px", fontWeight: "500", color: "#1a1a2e" }}>{emp.name}</td>
                           <td style={{ padding: "13px 16px", color: "#64748b" }}>{emp.email}</td>
@@ -211,6 +284,34 @@ export default function App() {
                     </tbody>
                   </table>
                 )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div style={{ padding: "16px 20px", borderTop: "1px solid #f0f4f8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "13px", color: "#64748b" }}>
+                      Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} employees
+                    </span>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: currentPage === 1 ? "#f8fafc" : "white", color: currentPage === 1 ? "#cbd5e1" : "#1a1a2e", cursor: currentPage === 1 ? "not-allowed" : "pointer", fontSize: "13px" }}
+                      >← Prev</button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: currentPage === page ? "#4f8ef7" : "white", color: currentPage === page ? "white" : "#1a1a2e", cursor: "pointer", fontSize: "13px", fontWeight: currentPage === page ? "600" : "400" }}
+                        >{page}</button>
+                      ))}
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: currentPage === totalPages ? "#f8fafc" : "white", color: currentPage === totalPages ? "#cbd5e1" : "#1a1a2e", cursor: currentPage === totalPages ? "not-allowed" : "pointer", fontSize: "13px" }}
+                      >Next →</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -218,8 +319,6 @@ export default function App() {
           {/* ========== DASHBOARD TAB ========== */}
           {activeTab === "dashboard" && (
             <div style={{ display: "grid", gap: "20px" }}>
-
-              {/* Bar Chart */}
               <div style={{ background: "white", borderRadius: "10px", padding: "24px", border: "1px solid #e2e8f0" }}>
                 <h2 style={{ margin: "0 0 20px", color: "#1a1a2e", fontSize: "16px", fontWeight: "600" }}>📊 Salary by Employee</h2>
                 {employees.length === 0 ? (
@@ -236,8 +335,6 @@ export default function App() {
                   </ResponsiveContainer>
                 )}
               </div>
-
-              {/* Pie Chart */}
               <div style={{ background: "white", borderRadius: "10px", padding: "24px", border: "1px solid #e2e8f0" }}>
                 <h2 style={{ margin: "0 0 20px", color: "#1a1a2e", fontSize: "16px", fontWeight: "600" }}>🥧 Employees by Department</h2>
                 {pieData.length === 0 ? (
@@ -256,7 +353,6 @@ export default function App() {
                   </ResponsiveContainer>
                 )}
               </div>
-
             </div>
           )}
         </div>
