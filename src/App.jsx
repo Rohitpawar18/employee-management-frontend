@@ -40,18 +40,31 @@ export default function App() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (editingId) {
-      await updateEmployee(editingId, form);
-      showMessage("Employee updated successfully!", "success");
-    } else {
-      await createEmployee(form);
-      showMessage("Employee added successfully!", "success");
-    }
-    setForm(emptyForm);
-    setEditingId(null);
-    fetchEmployees();
-  };
+      e.preventDefault();
+      if (editingId) {
+        const updated = { ...form, id: editingId };
+        // Show instantly in UI
+        setEmployees((prev) =>
+          prev.map((emp) => (emp.id === editingId ? updated : emp))
+        );
+        showMessage("Employee updated successfully!", "success");
+        setForm(emptyForm);
+        setEditingId(null);
+        // Sync with backend in background
+        await updateEmployee(editingId, form);
+        fetchEmployees();
+      } else {
+        const temp = { ...form, id: "temp-" + Date.now() };
+        // Show instantly in UI
+        setEmployees((prev) => [...prev, temp]);
+        showMessage("Employee added successfully!", "success");
+        setForm(emptyForm);
+        setEditingId(null);
+        // Sync with backend in background
+        await createEmployee(form);
+        fetchEmployees();
+      }
+    };
 
   const handleEdit = (emp) => {
     setForm({ name: emp.name, email: emp.email, department: emp.department, salary: emp.salary });
@@ -60,11 +73,14 @@ export default function App() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this employee?")) {
-      await deleteEmployee(id);
-      showMessage("Employee deleted!", "error");
-      fetchEmployees();
-    }
+      if (window.confirm("Are you sure you want to delete this employee?")) {
+        // Remove instantly from UI
+        setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+        showMessage("Employee deleted!", "error");
+        // Sync with backend in background
+        await deleteEmployee(id);
+        fetchEmployees();
+      }
   };
 
   const handleCancel = () => { setForm(emptyForm); setEditingId(null); };
