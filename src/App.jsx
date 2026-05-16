@@ -112,12 +112,14 @@ export default function App() {
   });
 
   //Pagination Logic
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const HandlePageChange = (page) =>{
-      setCurrentPage(page);
-      window.scrollTo({top : 0, behavior: "smooth"});
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSearchChange = (e) => {setSearch(e.target.value); setCurrentPage(1); };
@@ -305,25 +307,25 @@ export default function App() {
                 {totalPages > 1 && (
                   <div style={{ padding: "16px 20px", borderTop: "1px solid #f0f4f8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "13px", color: "#64748b" }}>
-                      Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} employees
+                      Showing {(safePage - 1) * PAGE_SIZE + 1} to {Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length} employees
                     </span>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: currentPage === 1 ? "#f8fafc" : "white", color: currentPage === 1 ? "#cbd5e1" : "#1a1a2e", cursor: currentPage === 1 ? "not-allowed" : "pointer", fontSize: "13px" }}
+                        onClick={() => handlePageChange(safePage - 1)}
+                        disabled={safePage === 1}
+                        style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: safePage === 1 ? "#f8fafc" : "white", color: safePage === 1 ? "#cbd5e1" : "#1a1a2e", cursor: safePage === 1 ? "not-allowed" : "pointer", fontSize: "13px" }}
                       >← Prev</button>
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}
-                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: currentPage === page ? "#4f8ef7" : "white", color: currentPage === page ? "white" : "#1a1a2e", cursor: "pointer", fontSize: "13px", fontWeight: currentPage === page ? "600" : "400" }}
+                          style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: safePage === page ? "#4f8ef7" : "white", color: safePage === page ? "white" : "#1a1a2e", cursor: "pointer", fontSize: "13px", fontWeight: safePage === page ? "600" : "400" }}
                         >{page}</button>
                       ))}
                       <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: currentPage === totalPages ? "#f8fafc" : "white", color: currentPage === totalPages ? "#cbd5e1" : "#1a1a2e", cursor: currentPage === totalPages ? "not-allowed" : "pointer", fontSize: "13px" }}
+                        onClick={() => handlePageChange(safePage + 1)}
+                        disabled={safePage === totalPages}
+                        style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: safePage === totalPages ? "#f8fafc" : "white", color: safePage === totalPages ? "#cbd5e1" : "#1a1a2e", cursor: safePage === totalPages ? "not-allowed" : "pointer", fontSize: "13px" }}
                       >Next →</button>
                     </div>
                   </div>
