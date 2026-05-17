@@ -328,7 +328,14 @@ export default function App() {
                                 style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
                                 Del
                               </button>
-                              <button onClick={() => downloadSalarySlip(emp.id)}
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await downloadSalarySlip(emp.id);
+                                  } catch (e) {
+                                    alert("Failed to download salary slip. Please try again.");
+                                  }
+                                }}
                                 style={{ background: "#f0fdf4", color: "#22c55e", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
                                 PDF
                               </button>
