@@ -8,6 +8,7 @@ import {
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  downloadSalarySlip,
 } from "./employeeService";
 
 const emptyForm = { name: "", email: "", department: "", salary: "" };
@@ -320,9 +321,17 @@ export default function App() {
                           <td style={{ padding: "12px 14px" }}>
                             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                               <button onClick={() => handleEdit(emp)}
-                                style={{ background: "#fef3c7", color: "#d97706", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Edit</button>
+                                style={{ background: "#fef3c7", color: "#d97706", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
+                                Edit
+                              </button>
                               <button onClick={() => handleDelete(emp.id)}
-                                style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Del</button>
+                                style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
+                                Del
+                              </button>
+                              <button onClick={() => downloadSalarySlip(emp.id)}
+                                style={{ background: "#f0fdf4", color: "#22c55e", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
+                                PDF
+                              </button>
                             </div>
                           </td>
                         </tr>
