@@ -331,7 +331,7 @@ export default function App() {
                               <button
                                 onClick={async () => {
                                   try {
-                                    await downloadSalarySlip(emp.id);
+                                    await downloadSalarySlip(emp.id, emp.name);
                                   } catch (e) {
                                     alert("Failed to download salary slip. Please try again.");
                                   }
