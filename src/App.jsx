@@ -140,7 +140,7 @@ export default function App() {
   employees.forEach((e) => { deptMap[e.department] = (deptMap[e.department] || 0) + 1; });
   const pieData = Object.entries(deptMap).map(([name, value]) => ({ name, value }));
 
-  const handlePhotoUpload = async (empID, file) => {
+  const handlePhotoUpload = async (empId, file) => {
     if(!file) return;
 
     const updated = await uploadEmployeePhoto(empId, file);
