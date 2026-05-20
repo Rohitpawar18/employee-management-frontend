@@ -328,19 +328,45 @@ export default function App() {
                           <td style={{ padding: "12px 14px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                               {emp.photoUrl ? (
-                                <img src={emp.photoUrl} alt={emp.name}
-                                  style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" }} />
+                                <img
+                                  src={emp.photoUrl}
+                                  alt={emp.name}
+                                  style={{
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "50%",
+                                    objectFit: "cover",
+                                    border: "2px solid #e2e8f0"
+                                  }}
+                                />
                               ) : (
-                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#4f8ef7", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "600", fontSize: "14px" }}>
+                                <div style={{
+                                  width: "36px",
+                                  height: "36px",
+                                  borderRadius: "50%",
+                                  background: "#4f8ef7",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "white",
+                                  fontWeight: "600",
+                                  fontSize: "14px"
+                                }}>
                                   {emp.name ? emp.name.charAt(0).toUpperCase() : "?"}
                                 </div>
                               )}
                               <div>
-                                <p style={{ margin: 0, fontWeight: "500", color: "#1a1a2e", fontSize: "13px" }}>{emp.name}</p>
+                                <p style={{ margin: 0, fontWeight: "500", color: "#1a1a2e", fontSize: "13px" }}>
+                                  {emp.name}
+                                </p>
                                 <label style={{ fontSize: "11px", color: "#4f8ef7", cursor: "pointer" }}>
                                   📷 Upload
-                                  <input type="file" accept="image/*" style={{ display: "none" }}
-                                    onChange={(e) => handlePhotoUpload(emp.id, e.target.files[0])} />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: "none" }}
+                                    onChange={(e) => handlePhotoUpload(emp.id, e.target.files[0])}
+                                  />
                                 </label>
                               </div>
                             </div>
