@@ -23,12 +23,12 @@ export const downloadSalarySlip = async (id, name) => {
 };
 
 export const uploadEmployeePhoto = async (id, file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const BASE = 'https://employee-management-backend-2136.onrender.com';
-    const response = await fetch(`${BASE}/api/employees/${id}/upload-photo`, {
-        method: 'POST';
-        body: formData,
-    });
-    return response.json();
+  const formData = new FormData();
+  formData.append('file', file);
+  const BASE = 'https://employee-management-backend-2l36.onrender.com';
+  const response = await fetch(`${BASE}/api/employees/${id}/upload-photo`, {
+    method: 'POST',
+    body: formData,
+  });
+  return response.json();
 };
