@@ -1,3 +1,4 @@
+import { uploadEmployeePhoto } from "./employeeService";
 import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -138,6 +139,17 @@ export default function App() {
   const deptMap = {};
   employees.forEach((e) => { deptMap[e.department] = (deptMap[e.department] || 0) + 1; });
   const pieData = Object.entries(deptMap).map(([name, value]) => ({ name, value }));
+
+  const handlePhotoUpload = async (empID, file) => {
+    if(!file) return;
+
+    const updated = await uploadEmployeePhoto(empId, file);
+    setEmployees((prev) =>
+        prev.map((emp) => (emp.id === empId ? {...emp, photoUrl: updated.photoUrl} :emp))
+    );
+
+    showMessage("Photo Uploaded Successfully!", "success");
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "'Segoe UI', sans-serif" }}>
@@ -312,7 +324,28 @@ export default function App() {
                     <tbody>
                       {paginated.map((emp, i) => (
                         <tr key={emp.id} style={{ borderTop: "1px solid #f0f4f8", background: i % 2 === 0 ? "white" : "#fafafa" }}>
-                          <td style={{ padding: "12px 14px", fontWeight: "500", color: "#1a1a2e" }}>{emp.name}</td>
+
+                          <td style={{ padding: "12px 14px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              {emp.photoUrl ? (
+                                <img src={emp.photoUrl} alt={emp.name}
+                                  style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" }} />
+                              ) : (
+                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#4f8ef7", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "600", fontSize: "14px" }}>
+                                  {emp.name ? emp.name.charAt(0).toUpperCase() : "?"}
+                                </div>
+                              )}
+                              <div>
+                                <p style={{ margin: 0, fontWeight: "500", color: "#1a1a2e", fontSize: "13px" }}>{emp.name}</p>
+                                <label style={{ fontSize: "11px", color: "#4f8ef7", cursor: "pointer" }}>
+                                  📷 Upload
+                                  <input type="file" accept="image/*" style={{ display: "none" }}
+                                    onChange={(e) => handlePhotoUpload(emp.id, e.target.files[0])} />
+                                </label>
+                              </div>
+                            </div>
+                          </td>
+
                           <td className="hide-mobile" style={{ padding: "12px 14px", color: "#64748b" }}>{emp.email}</td>
                           <td style={{ padding: "12px 14px" }}>
                             <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", whiteSpace: "nowrap" }}>{emp.department}</span>
