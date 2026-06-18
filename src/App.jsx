@@ -1,15 +1,16 @@
-import { uploadEmployeePhoto } from "./employeeService";
 import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from "recharts";
 import {
+  loginAdmin,
   getAllEmployees,
   createEmployee,
   updateEmployee,
   deleteEmployee,
   downloadSalarySlip,
+  uploadEmployeePhoto
 } from "./employeeService";
 
 const emptyForm = { name: "", email: "", department: "", salary: "" };
@@ -28,8 +29,12 @@ export default function App() {
   const [minSalary, setMinSalary] = useState("");
   const [maxSalary, setMaxSalary] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => { if (isLoggedIn) fetchEmployees(); }, [isLoggedIn]);
 
   const fetchEmployees = async () => {
     const res = await getAllEmployees();
@@ -39,6 +44,27 @@ export default function App() {
   const showMessage = (text, type) => {
     setMessage({ text, type });
     setTimeout(() => setMessage({ text: "", type: "" }), 3000);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await loginAdmin(loginForm);
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('username', res.data.username);
+      setIsLoggedIn(true);
+    } catch (err) {
+      setLoginError("Invalid username or password!");
+    }
+    setLoginLoading(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    setIsLoggedIn(false);
   };
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -96,6 +122,15 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const handlePhotoUpload = async (empId, file) => {
+    if (!file) return;
+    const updated = await uploadEmployeePhoto(empId, file);
+    setEmployees((prev) =>
+      prev.map((emp) => (emp.id === empId ? { ...emp, photoUrl: updated.photoUrl } : emp))
+    );
+    showMessage("Photo uploaded successfully!", "success");
+  };
+
   const allDepartments = ["All", ...new Set(employees.map((e) => e.department))];
 
   const filtered = employees.filter((e) => {
@@ -140,28 +175,72 @@ export default function App() {
   employees.forEach((e) => { deptMap[e.department] = (deptMap[e.department] || 0) + 1; });
   const pieData = Object.entries(deptMap).map(([name, value]) => ({ name, value }));
 
-  const handlePhotoUpload = async (empId, file) => {
-    if(!file) return;
+  // ========== LOGIN PAGE ==========
+  if (!isLoggedIn) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "'Segoe UI', sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: "white", borderRadius: "12px", padding: "40px", width: "100%", maxWidth: "400px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", border: "1px solid #e2e8f0" }}>
+          <div style={{ textAlign: "center", marginBottom: "28px" }}>
+            <div style={{ width: "56px", height: "56px", background: "#4f8ef7", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: "white", fontWeight: "700", fontSize: "24px" }}>E</div>
+            <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "#1a1a2e" }}>Employee Management</h1>
+            <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#94a3b8" }}>Sign in to your admin account</p>
+          </div>
 
-    const updated = await uploadEmployeePhoto(empId, file);
-    setEmployees((prev) =>
-        prev.map((emp) => (emp.id === empId ? {...emp, photoUrl: updated.photoUrl} :emp))
+          {loginError && (
+            <div style={{ background: "#fee2e2", color: "#991b1b", padding: "10px 14px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
+              ✕ {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#374151", marginBottom: "6px" }}>Username</label>
+              <input
+                type="text"
+                placeholder="Enter username"
+                value={loginForm.username}
+                onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                required
+                style={{ width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px", outline: "none", boxSizing: "border-box", color: "#1a1a2e" }}
+              />
+            </div>
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#374151", marginBottom: "6px" }}>Password</label>
+              <input
+                type="password"
+                placeholder="Enter password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                required
+                style={{ width: "100%", padding: "11px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px", outline: "none", boxSizing: "border-box", color: "#1a1a2e" }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loginLoading}
+              style={{ width: "100%", padding: "12px", background: loginLoading ? "#94a3b8" : "#4f8ef7", color: "white", border: "none", borderRadius: "8px", cursor: loginLoading ? "not-allowed" : "pointer", fontSize: "15px", fontWeight: "600" }}>
+              {loginLoading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+
+          <div style={{ marginTop: "20px", padding: "12px", background: "#f8fafc", borderRadius: "8px", fontSize: "12px", color: "#64748b", textAlign: "center" }}>
+            Default credentials: <strong>admin</strong> / <strong>admin123</strong>
+          </div>
+        </div>
+      </div>
     );
+  }
 
-    showMessage("Photo Uploaded Successfully!", "success");
-  };
-
+  // ========== MAIN APP ==========
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "'Segoe UI', sans-serif" }}>
-
-      {/* Responsive CSS */}
       <style>{`
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .filter-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; }
         .table-wrap { overflow-x: auto; }
         .hide-mobile { display: table-cell; }
-        .nav-tabs { display: flex; gap: 8px; }
+        .nav-tabs { display: flex; gap: 8px; align-items: center; }
         .mobile-menu { display: none; }
         @media (max-width: 768px) {
           .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -193,6 +272,9 @@ export default function App() {
           <button onClick={() => setActiveTab("dashboard")} style={{ padding: "8px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "500", fontSize: "13px", background: activeTab === "dashboard" ? "#4f8ef7" : "transparent", color: activeTab === "dashboard" ? "white" : "#aaa" }}>
             Dashboard
           </button>
+          <button onClick={handleLogout} style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #ef4444", cursor: "pointer", fontWeight: "500", fontSize: "13px", background: "transparent", color: "#ef4444" }}>
+            Logout
+          </button>
         </div>
 
         {/* Mobile hamburger */}
@@ -202,7 +284,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Mobile nav dropdown */}
+      {/* Mobile nav */}
       {menuOpen && (
         <div className="mobile-nav">
           <button onClick={() => { setActiveTab("employees"); setMenuOpen(false); }}
@@ -212,6 +294,10 @@ export default function App() {
           <button onClick={() => { setActiveTab("dashboard"); setMenuOpen(false); }}
             style={{ padding: "10px 16px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "500", fontSize: "14px", background: activeTab === "dashboard" ? "#4f8ef7" : "#1a1a2e", color: "white", textAlign: "left" }}>
             📊 Dashboard
+          </button>
+          <button onClick={handleLogout}
+            style={{ padding: "10px 16px", borderRadius: "8px", border: "1px solid #ef4444", cursor: "pointer", fontWeight: "500", fontSize: "14px", background: "transparent", color: "#ef4444", textAlign: "left" }}>
+            🚪 Logout
           </button>
         </div>
       )}
@@ -241,7 +327,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* ========== EMPLOYEES TAB ========== */}
+        {/* EMPLOYEES TAB */}
         {activeTab === "employees" && (
           <>
             {/* Form */}
@@ -277,14 +363,11 @@ export default function App() {
               </form>
             </div>
 
-            {/* Search + Filters */}
+            {/* Filters */}
             <div style={{ background: "white", borderRadius: "10px", padding: "16px 18px", marginBottom: "16px", border: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                 <span style={{ fontWeight: "600", color: "#1a1a2e", fontSize: "14px" }}>🔍 Search & Filter</span>
-                <button onClick={clearFilters}
-                  style={{ background: "#f1f5f9", color: "#64748b", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>
-                  Clear
-                </button>
+                <button onClick={clearFilters} style={{ background: "#f1f5f9", color: "#64748b", border: "none", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>Clear</button>
               </div>
               <div className="filter-grid">
                 <input placeholder="Search by name or department..." value={search} onChange={handleSearchChange}
@@ -303,9 +386,7 @@ export default function App() {
             {/* Table */}
             <div style={{ background: "white", borderRadius: "10px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
               <div style={{ padding: "14px 18px", borderBottom: "1px solid #f0f4f8" }}>
-                <span style={{ fontWeight: "600", color: "#1a1a2e", fontSize: "14px" }}>
-                  All Employees ({filtered.length})
-                </span>
+                <span style={{ fontWeight: "600", color: "#1a1a2e", fontSize: "14px" }}>All Employees ({filtered.length})</span>
               </div>
               {paginated.length === 0 ? (
                 <div style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>No employees found!</div>
@@ -324,54 +405,26 @@ export default function App() {
                     <tbody>
                       {paginated.map((emp, i) => (
                         <tr key={emp.id} style={{ borderTop: "1px solid #f0f4f8", background: i % 2 === 0 ? "white" : "#fafafa" }}>
-
                           <td style={{ padding: "12px 14px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                               {emp.photoUrl ? (
-                                <img
-                                  src={emp.photoUrl}
-                                  alt={emp.name}
-                                  style={{
-                                    width: "36px",
-                                    height: "36px",
-                                    borderRadius: "50%",
-                                    objectFit: "cover",
-                                    border: "2px solid #e2e8f0"
-                                  }}
-                                />
+                                <img src={emp.photoUrl} alt={emp.name}
+                                  style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" }} />
                               ) : (
-                                <div style={{
-                                  width: "36px",
-                                  height: "36px",
-                                  borderRadius: "50%",
-                                  background: "#4f8ef7",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  color: "white",
-                                  fontWeight: "600",
-                                  fontSize: "14px"
-                                }}>
+                                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#4f8ef7", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "600", fontSize: "14px" }}>
                                   {emp.name ? emp.name.charAt(0).toUpperCase() : "?"}
                                 </div>
                               )}
                               <div>
-                                <p style={{ margin: 0, fontWeight: "500", color: "#1a1a2e", fontSize: "13px" }}>
-                                  {emp.name}
-                                </p>
+                                <p style={{ margin: 0, fontWeight: "500", color: "#1a1a2e", fontSize: "13px" }}>{emp.name}</p>
                                 <label style={{ fontSize: "11px", color: "#4f8ef7", cursor: "pointer" }}>
                                   📷 Upload
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    style={{ display: "none" }}
-                                    onChange={(e) => handlePhotoUpload(emp.id, e.target.files[0])}
-                                  />
+                                  <input type="file" accept="image/*" style={{ display: "none" }}
+                                    onChange={(e) => handlePhotoUpload(emp.id, e.target.files[0])} />
                                 </label>
                               </div>
                             </div>
                           </td>
-
                           <td className="hide-mobile" style={{ padding: "12px 14px", color: "#64748b" }}>{emp.email}</td>
                           <td style={{ padding: "12px 14px" }}>
                             <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "500", whiteSpace: "nowrap" }}>{emp.department}</span>
@@ -380,24 +433,11 @@ export default function App() {
                           <td style={{ padding: "12px 14px" }}>
                             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                               <button onClick={() => handleEdit(emp)}
-                                style={{ background: "#fef3c7", color: "#d97706", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
-                                Edit
-                              </button>
+                                style={{ background: "#fef3c7", color: "#d97706", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Edit</button>
                               <button onClick={() => handleDelete(emp.id)}
-                                style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
-                                Del
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await downloadSalarySlip(emp.id, emp.name);
-                                  } catch (e) {
-                                    alert("Failed to download salary slip. Please try again.");
-                                  }
-                                }}
-                                style={{ background: "#f0fdf4", color: "#22c55e", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>
-                                PDF
-                              </button>
+                                style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Del</button>
+                              <button onClick={async () => { try { await downloadSalarySlip(emp.id, emp.name); } catch (e) { alert("Failed to download."); } }}
+                                style={{ background: "#f0fdf4", color: "#22c55e", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>PDF</button>
                             </div>
                           </td>
                         </tr>
@@ -435,7 +475,7 @@ export default function App() {
           </>
         )}
 
-        {/* ========== DASHBOARD TAB ========== */}
+        {/* DASHBOARD TAB */}
         {activeTab === "dashboard" && (
           <div style={{ display: "grid", gap: "20px" }}>
             <div style={{ background: "white", borderRadius: "10px", padding: "20px", border: "1px solid #e2e8f0" }}>
@@ -447,7 +487,7 @@ export default function App() {
                   <BarChart data={barData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} />
-                    <YAxis tick={{ fontSize: 11, fill: "#64748b" }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fontSize: 11, fill: "#64748b" }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, "Salary"]} />
                     <Bar dataKey="salary" fill="#4f8ef7" radius={[6, 6, 0, 0]} />
                   </BarChart>
