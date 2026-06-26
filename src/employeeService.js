@@ -1,15 +1,16 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://employee-management-backend-2l36.onrender.com/api/employees';
-const AUTH_URL = 'https://employee-management-backend-2136.onrender.com/api/auth';
+const BACKEND = 'https://employee-management-backend-2l36.onrender.com';
+const BASE_URL = `${BACKEND}/api/employees`;
+const AUTH_URL = `${BACKEND}/api/auth`;
 
-//Add token to every request automatically
+// Add token to every request automatically
 axios.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if(token){
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const loginAdmin = (credentials) => axios.post(`${AUTH_URL}/login`, credentials);
@@ -20,10 +21,9 @@ export const updateEmployee = (id, employee) => axios.put(`${BASE_URL}/${id}`, e
 export const deleteEmployee = (id) => axios.delete(`${BASE_URL}/${id}`);
 
 export const downloadSalarySlip = async (id, name) => {
-  const BASE = 'https://employee-management-backend-2l36.onrender.com';
   const token = localStorage.getItem('token');
-  const response = await fetch(`${BASE}/api/salary-slip/${id}`, {
-    headers: { Authorization: `Bearer ${token}`}
+  const response = await fetch(`${BACKEND}/api/salary-slip/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
   });
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
@@ -39,11 +39,10 @@ export const downloadSalarySlip = async (id, name) => {
 export const uploadEmployeePhoto = async (id, file) => {
   const formData = new FormData();
   formData.append('file', file);
-  const BASE = 'https://employee-management-backend-2l36.onrender.com';
   const token = localStorage.getItem('token');
-  const response = await fetch(`${BASE}/api/employees/${id}/upload-photo`, {
+  const response = await fetch(`${BACKEND}/api/employees/${id}/upload-photo`, {
     method: 'POST',
-    headers: {Authorization: `Bearer ${token}`},
+    headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
   return response.json();
