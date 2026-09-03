@@ -33,6 +33,7 @@ export default function App() {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [role, setRole] = useState(localStorage.getItem('role')|| "");
 
   useEffect(() => { if (isLoggedIn) fetchEmployees(); }, [isLoggedIn]);
 
@@ -52,8 +53,11 @@ export default function App() {
     setLoginError("");
     try {
       const res = await loginAdmin(loginForm);
+      const userRole = res.data.role || 'EMPLOYEE';
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('username', res.data.username);
+      localStorage.setItem('role', res.data.role);
+      setRole(userRole);
       setIsLoggedIn(true);
     } catch (err) {
       setLoginError("Invalid username or password!");
@@ -64,6 +68,8 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('role');
+    setRole("");
     setIsLoggedIn(false);
   };
 
@@ -223,8 +229,10 @@ export default function App() {
             </button>
           </form>
 
-          <div style={{ marginTop: "20px", padding: "12px", background: "#f8fafc", borderRadius: "8px", fontSize: "12px", color: "#64748b", textAlign: "center" }}>
-            Default credentials: <strong>admin</strong> / <strong>admin123</strong>
+          <div style={{ marginTop: "20px", padding: "12px", background: "#f8fafc", borderRadius: "8px", fontSize: "12px", color: "#64748b" }}>
+            <p style={{ margin: "0 0 6px", fontWeight: "600", color: "#374151" }}>Login Credentials:</p>
+            <p style={{ margin: "0 0 4px" }}>👨🏻‍💼 Admin: <strong>admin</strong> / <strong>admin123</strong></p>
+            <p style={{ margin: 0 }}>👨🏻‍💻 Employee: <strong>emp</strong> / <strong>emp123</strong></p>
           </div>
         </div>
       </div>
@@ -262,6 +270,9 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ width: "38px", height: "38px", background: "#4f8ef7", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: "700", fontSize: "18px" }}>E</div>
           <span style={{ color: "white", fontSize: "16px", fontWeight: "600" }}>Employee Management</span>
+          <span style={{ background: role === "ADMIN" ? "#22c55e" : "#f59e0b", color: "white", fontSize: "11px", padding: "3px 10px", borderRadius: "20px", fontWeight: "500" }}>
+            {role === "ADMIN" ? "👨🏻‍💼 Admin" : "👨🏻‍💻 Employee"}
+          </span>
         </div>
 
         {/* Desktop tabs */}
@@ -310,6 +321,12 @@ export default function App() {
             {message.type === "success" ? "✓" : "✕"} {message.text}
           </div>
         )}
+        {isLoggedIn && (
+          <div style={{ background: role === "ADMIN" ? "#eff6ff" : "#fefce8", border: `1px solid ${role === "ADMIN" ? "#bfdbfe" : "#fde68a"}`, borderRadius: "8px", padding: "10px 16px", marginBottom: "16px", fontSize: "13px", color: role === "ADMIN" ? "#1d4ed8" : "#92400e", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>{role === "ADMIN" ? "👑 Welcome Admin! You have full access." : "👤 Welcome! You can view employees and download salary slips."}</span>
+            <span style={{ fontSize: "11px", opacity: 0.7 }}>{localStorage.getItem('username')}</span>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="stats-grid" style={{ marginBottom: "20px" }}>
@@ -330,7 +347,8 @@ export default function App() {
         {/* EMPLOYEES TAB */}
         {activeTab === "employees" && (
           <>
-            {/* Form */}
+            {/* Form - Admin Only */}
+            {role === "ADMIN" && (
             <div style={{ background: "white", borderRadius: "10px", padding: "20px", marginBottom: "20px", border: "1px solid #e2e8f0" }}>
               <h2 style={{ margin: "0 0 16px", color: "#1a1a2e", fontSize: "15px", fontWeight: "600" }}>
                 {editingId ? "✏️ Edit Employee" : "➕ Add New Employee"}
@@ -362,6 +380,7 @@ export default function App() {
                 </div>
               </form>
             </div>
+            )}
 
             {/* Filters */}
             <div style={{ background: "white", borderRadius: "10px", padding: "16px 18px", marginBottom: "16px", border: "1px solid #e2e8f0" }}>
@@ -432,10 +451,14 @@ export default function App() {
                           <td style={{ padding: "12px 14px", color: "#1a1a2e", fontWeight: "500", whiteSpace: "nowrap" }}>₹{Number(emp.salary).toLocaleString()}</td>
                           <td style={{ padding: "12px 14px" }}>
                             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                              <button onClick={() => handleEdit(emp)}
-                                style={{ background: "#fef3c7", color: "#d97706", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Edit</button>
-                              <button onClick={() => handleDelete(emp.id)}
-                                style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Del</button>
+                              {role === "ADMIN" && (
+                                <>
+                                  <button onClick={() => handleEdit(emp)}
+                                    style={{ background: "#fef3c7", color: "#d97706", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Edit</button>
+                                  <button onClick={() => handleDelete(emp.id)}
+                                    style={{ background: "#fee2e2", color: "#ef4444", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>Del</button>
+                                </>
+                              )}
                               <button onClick={async () => { try { await downloadSalarySlip(emp.id, emp.name); } catch (e) { alert("Failed to download."); } }}
                                 style={{ background: "#f0fdf4", color: "#22c55e", border: "none", padding: "5px 10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500" }}>PDF</button>
                             </div>

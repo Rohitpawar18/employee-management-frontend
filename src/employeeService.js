@@ -13,7 +13,13 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
-export const loginAdmin = (credentials) => axios.post(`${AUTH_URL}/login`, credentials);
+export const loginAdmin = async (credentials) => {
+  const res = await axios.post(`${AUTH_URL}/login`, credentials);
+  const role = res.data.role || 'EMPLOYEE';
+  localStorage.setItem('role', role);
+  return res;
+};
+
 export const getAllEmployees = () => axios.get(BASE_URL);
 export const getEmployeeById = (id) => axios.get(`${BASE_URL}/${id}`);
 export const createEmployee = (employee) => axios.post(BASE_URL, employee);
